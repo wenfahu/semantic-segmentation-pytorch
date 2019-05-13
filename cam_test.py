@@ -22,6 +22,8 @@ colors = loadmat('data/color150.mat')['colors']
 
 IMGMAX_SIZE = 1000
 padding_constant = 8
+bg_image = cv2.imread('/home/wenfahu/Pictures/win98.jpg')
+bg_image = cv2.resize(bg_image, (640, 480))
 
 
 def visualize_display(img, pred):
@@ -129,9 +131,13 @@ def cam_test(segmentation_module, cap, args):
             pred = as_numpy(pred.squeeze(0).cpu())
 
         # visualization
-        viz_res = visualize_display(image, pred)
-        print(viz_res.shape)
-        cv2.imshow("VIZ", viz_res)
+        person_mask = pred == 12
+        person_mask = person_mask[:, :, np.newaxis]
+        person_mask = np.tile(person_mask, (1, 1, 3))
+        # viz_res = visualize_display(image, pred)
+        viz_frame = bg_image.copy()
+        viz_frame[person_mask] = image[person_mask]
+        cv2.imshow("VIZ", viz_frame)
         if cv2.waitKey(25) & 0xFF == ord('q'):
             break
 
@@ -155,22 +161,6 @@ def main(args):
     crit = nn.NLLLoss(ignore_index=-1)
 
     segmentation_module = SegmentationModule(net_encoder, net_decoder, crit)
-
-    # Dataset and Loader
-    # if len(args.test_imgs) == 1 and os.path.isdir(args.test_imgs[0]):
-    #     test_imgs = find_recursive(args.test_imgs[0])
-    # else:
-    #     test_imgs = args.test_imgs
-    # list_test = [{'fpath_img': x} for x in test_imgs]
-    # dataset_test = TestDataset(
-    #     list_test, args, max_sample=args.num_val)
-    # loader_test = torchdata.DataLoader(
-    #     dataset_test,
-    #     batch_size=args.batch_size,
-    #     shuffle=False,
-    #     collate_fn=user_scattered_collate,
-    #     num_workers=5,
-    #     drop_last=True)
 
     segmentation_module.cuda()
 
